@@ -1,0 +1,5 @@
+.editor-container { display: flex; height: 100vh; }
+.file-tree { width: 250px; background: #f5f5f5; padding: 10px; }
+.editor-panel { flex: 1; }
+.monaco-editor { height: 100%; }
+.active { background: #007acc; color: white; }

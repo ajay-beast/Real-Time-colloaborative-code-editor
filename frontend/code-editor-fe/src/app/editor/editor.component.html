@@ -1,0 +1,22 @@
+<div class="editor-container">
+    <div class="file-tree">
+      <h3>Files</h3>
+      <ul>
+        <li *ngFor="let file of files" 
+            (click)="openFile(file)"
+            [class.active]="currentFile?.id === file.id">
+          {{ file.fileName }}
+        </li>
+      </ul>
+      <button (click)="createNewFile()">+ New File</button>
+    </div>
+    
+    <div class="editor-panel">
+      <ngx-monaco-editor 
+        [options]="editorOptions" 
+        [(ngModel)]="currentContent"
+        (onInit)="onEditorInit($event)"
+        class="monaco-editor">
+      </ngx-monaco-editor>
+    </div>
+  </div>
