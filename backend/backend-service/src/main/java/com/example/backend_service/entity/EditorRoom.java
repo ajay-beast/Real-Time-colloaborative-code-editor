@@ -22,6 +22,10 @@ public class EditorRoom {
   private LocalDateTime createdAt;
   private boolean isActive;
 
+  public EditorRoom() {
+    // Default constructor for JPA
+  }
+
   public EditorRoom(String roomId, String roomName, String creatorId) {
     this.roomId = roomId;
     this.roomName = roomName;
@@ -30,6 +34,6 @@ public class EditorRoom {
     this.isActive = true;
   }
 
-  @OneToMany(mappedBy = "roomId", cascade = CascadeType.ALL)
+  @OneToMany(mappedBy = "room", cascade = CascadeType.ALL)
   private List<EditorFile> files = new ArrayList<>();
 }

@@ -1,22 +1,88 @@
 <div class="editor-container">
-    <div class="file-tree">
-      <h3>Files</h3>
-      <ul>
-        <li *ngFor="let file of files" 
-            (click)="openFile(file)"
-            [class.active]="currentFile?.id === file.id">
-          {{ file.fileName }}
-        </li>
-      </ul>
-      <button (click)="createNewFile()">+ New File</button>
+    <!-- Room Info Header -->
+    <div class="room-header">
+      <h2>{{ currentRoom?.roomName || 'Collaborative Code Editor' }}</h2>
+      <span class="room-id">Room: {{ currentRoomId }}</span>
     </div>
-    
-    <div class="editor-panel">
-      <ngx-monaco-editor 
-        [options]="editorOptions" 
-        [(ngModel)]="currentContent"
-        (onInit)="onEditorInit($event)"
-        class="monaco-editor">
-      </ngx-monaco-editor>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-container">
+      <h3>Setting up your workspace...</h3>
+      <p>Creating room and loading files</p>
+    </div>
+
+    <!-- Main Editor (shown when not loading) -->
+    <div class="editor-main" *ngIf="!isLoading">
+      <!-- File Tree Panel -->
+      <div class="file-tree">
+        <div class="file-tree-header">
+          <h3>Files</h3>
+          <button (click)="showCreateFileDialog = true" class="btn-new-file">+ New File</button>
+        </div>
+        
+        <!-- File List -->
+        <ul class="file-list">
+          <li *ngFor="let file of files" 
+              (click)="openFile(file)"
+              [class.active]="currentFile?.id === file.id"
+              class="file-item">
+            <span class="file-name">{{ file.fileName }}</span>
+            <button (click)="deleteFile(file.id, $event)" class="btn-delete">×</button>
+          </li>
+        </ul>
+
+        <!-- Empty state when no files -->
+        <div *ngIf="files.length === 0" class="empty-files">
+          <p>No files yet</p>
+          <small>Create your first file to get started</small>
+        </div>
+      </div>
+      
+      <!-- Editor Panel -->
+      <div class="editor-panel">
+        <div class="editor-header" *ngIf="currentFile">
+          <span class="current-file">{{ currentFile.fileName }}</span>
+          <span class="file-language">{{ currentFile.language }}</span>
+          <button (click)="saveFile()" class="btn-save" [disabled]="!isFileModified">Save</button>
+        </div>
+
+        <ngx-monaco-editor 
+          [options]="editorOptions" 
+          [(ngModel)]="currentContent"
+          (ngModelChange)="onContentChange($event)"
+          (onInit)="onEditorInit($event)"
+          class="monaco-editor">
+        </ngx-monaco-editor>
+
+        <!-- Placeholder when no file selected -->
+        <div *ngIf="!currentFile" class="no-file-selected">
+          <h3>Welcome to your collaborative workspace!</h3>
+          <p>Create a file to start coding</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create File Dialog -->
+    <div class="modal" *ngIf="showCreateFileDialog" (click)="closeCreateFileDialog($event)">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <h3>Create New File</h3>
+        <form (ngSubmit)="createNewFile()" #createFileForm="ngForm">
+          <div class="form-group">
+            <label for="fileName">File Name:</label>
+            <input 
+              type="text" 
+              id="fileName"
+              [(ngModel)]="newFileName" 
+              name="fileName"
+              placeholder="e.g., main.cpp, script.js, index.html"
+              required>
+            <small class="file-hint">Include the file extension to enable syntax highlighting</small>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-create" [disabled]="!newFileName">Create</button>
+            <button type="button" (click)="showCreateFileDialog = false" class="btn-cancel">Cancel</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>

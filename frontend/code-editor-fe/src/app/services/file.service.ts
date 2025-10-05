@@ -15,29 +15,45 @@ export class FileService {
     return this.http.get<any[]>(`${this.baseUrl}/room/${roomId}`);
   }
   
-  createFile(roomId: string, fileName: string): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/room/${roomId}`, {
-      fileName,
-      content: '',
-      language: this.getLanguageFromFileName(fileName)
-    });
+  createFile(roomId: string, request: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/room/${roomId}`, request);
   }
   
-  updateFile(fileId: number, content: string): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/${fileId}`, {
-      content
-    });
+  updateFile(fileId: number, request: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/${fileId}`, request);
+  }
+
+  deleteFile(fileId: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/${fileId}`);
   }
   
   private getLanguageFromFileName(fileName: string): string {
-    const extension = fileName.split('.').pop();
-    const languageMap: any = {
-      'js': 'javascript',
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    const languageMap: { [key: string]: string } = {
+      // C++
+      'cpp': 'cpp',
+      'cc': 'cpp',
+      'cxx': 'cpp',
+      'c++': 'cpp',
+      
+      // Java
       'java': 'java',
+      
+      // Python
       'py': 'python',
+      
+      // JavaScript
+      'js': 'javascript',
+      'jsx': 'javascript',
+      
+      // HTML
       'html': 'html',
+      'htm': 'html',
+      
+      // CSS
       'css': 'css'
     };
+    
     return languageMap[extension || ''] || 'plaintext';
   }
 }

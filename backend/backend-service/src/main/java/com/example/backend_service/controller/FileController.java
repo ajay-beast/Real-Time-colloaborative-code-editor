@@ -3,9 +3,11 @@ package com.example.backend_service.controller;
 import com.example.backend_service.dto.CreateFileRequest;
 import com.example.backend_service.dto.UpdateFileRequest;
 import com.example.backend_service.entity.EditorFile;
+import com.example.backend_service.services.FileService;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,5 +44,11 @@ public class FileController {
       @RequestBody UpdateFileRequest request) {
 
     return ResponseEntity.ok(fileService.updateFile(fileId, request));
+  }
+
+  @DeleteMapping("/{fileId}")
+  public ResponseEntity<Void> deleteFile(@PathVariable Long fileId) {
+    fileService.deleteFile(fileId);
+    return ResponseEntity.noContent().build();
   }
 }

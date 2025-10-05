@@ -46,10 +46,9 @@ public class FileService {
     EditorFile file = new EditorFile(
         request.getFileName(),
         request.getContent() != null ? request.getContent() : "",
-        language,
-        room
+        language
     );
-
+    file.setRoom(room);
     return fileRepository.save(file);
   }
 
@@ -98,56 +97,35 @@ public class FileService {
     String extension = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
 
     switch (extension) {
-      case "java":
-        return "java";
-      case "js":
-      case "jsx":
-        return "javascript";
-      case "ts":
-      case "tsx":
-        return "typescript";
-      case "py":
-        return "python";
+      // C++
       case "cpp":
       case "cc":
       case "cxx":
+      case "c++":
         return "cpp";
-      case "c":
-        return "c";
+
+      // Java
+      case "java":
+        return "java";
+
+      // Python
+      case "py":
+        return "python";
+
+      // JavaScript
+      case "js":
+      case "jsx":
+        return "javascript";
+
+      // HTML
       case "html":
       case "htm":
         return "html";
+
+      // CSS
       case "css":
         return "css";
-      case "scss":
-      case "sass":
-        return "scss";
-      case "json":
-        return "json";
-      case "xml":
-        return "xml";
-      case "sql":
-        return "sql";
-      case "md":
-        return "markdown";
-      case "yml":
-      case "yaml":
-        return "yaml";
-      case "php":
-        return "php";
-      case "go":
-        return "go";
-      case "rb":
-        return "ruby";
-      case "kt":
-        return "kotlin";
-      case "swift":
-        return "swift";
-      case "cs":
-        return "csharp";
-      case "sh":
-      case "bash":
-        return "shell";
+
       default:
         return "plaintext";
     }

@@ -15,7 +15,7 @@ public interface EditorFileRepository extends JpaRepository<EditorFile, Long> {
   @Query("SELECT f FROM EditorFile f WHERE f.room.roomId = :roomId ORDER BY f.createdAt ASC")
   List<EditorFile> findByRoomId(@Param("roomId") String roomId);
 
-  // Find file by room ID and file name
+//  // Find file by room ID and file name
   @Query("SELECT f FROM EditorFile f WHERE f.room.roomId = :roomId AND f.fileName = :fileName")
   EditorFile findByRoomIdAndFileName(@Param("roomId") String roomId, @Param("fileName") String fileName);
 
