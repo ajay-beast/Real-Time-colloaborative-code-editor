@@ -3,6 +3,20 @@
     <div class="room-header">
       <h2>{{ currentRoom?.roomName || 'Collaborative Code Editor' }}</h2>
       <span class="room-id">Room: {{ currentRoomId }}</span>
+      <button class="btn-new-room" (click)="newRoom()">New Room</button>
+      <button class="btn-share-room" (click)="shareRoom()">
+        Share Room
+      </button>
+      <button (click)="toggleRoomList()">Rooms ▼</button>
+  
+      <div *ngIf="showRoomList" class="room-list-dropdown">
+        <div *ngFor="let room of userRooms" [class.active]="room.roomId === currentRoomId" class="room-list-item">
+          <span (click)="switchRoom(room)">
+            {{ room.roomName }} ({{ room.roomId }})
+          </span>
+          <button *ngIf="!room.createdByUser" (click)="leaveRoom(room); $event.stopPropagation()">Leave</button>
+        </div>
+      </div>
     </div>
 
     <!-- Loading State -->

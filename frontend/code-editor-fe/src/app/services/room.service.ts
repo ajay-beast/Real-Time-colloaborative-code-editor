@@ -24,4 +24,12 @@ export class RoomService {
   roomExists(roomId: string): Observable<boolean> {
     return this.http.get<boolean>(`${this.baseUrl}/${roomId}/exists`);
   }
+
+  getUserRooms(userId: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/user/${userId}`);
+  }
+  
+  leaveRoom(roomId: string, userId: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/${roomId}/leave`, { userId });
+  }
 }

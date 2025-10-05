@@ -34,6 +34,9 @@ export class EditorComponent implements OnInit {
   showCreateFileDialog = false;
   newFileName = '';
   isLoading = true; // New loading state
+  userId = 'user123'; // your user ID
+  userRooms: any[] = [];
+  showRoomList = false;
   
   constructor(
     private fileService: FileService,
@@ -43,7 +46,97 @@ export class EditorComponent implements OnInit {
   ) {}
   
   ngOnInit() {
-  this.initializeWorkspace();
+    this.loadUserRooms();
+    // If roomId is present in URL, use it and persist
+    const roomIdFromRoute = this.route.snapshot.paramMap.get('roomId');
+    if (roomIdFromRoute && roomIdFromRoute.trim()) {
+      this.currentRoomId = roomIdFromRoute.trim();
+      localStorage.setItem('currentRoomId', this.currentRoomId);
+    }
+    this.initializeWorkspace();
+  }
+
+  loadUserRooms() {
+    this.roomService.getUserRooms(this.userId).subscribe({
+      next: (rooms) => {
+        this.userRooms = rooms;
+        // If no roomId set, but rooms exist, set first as active
+        if (!this.currentRoomId && rooms.length > 0) {
+          this.switchRoom(rooms[0]);
+        }
+      },
+      error: (e) => console.error('Failed to load user rooms', e)
+    });
+  }
+
+  switchRoom(room: any) {
+    if (this.currentRoomId === room.roomId) return;
+    if (this.isFileModified) {
+      if (!confirm('You have unsaved changes. Continue without saving?')) return;
+    }
+    
+    this.currentRoomId = room.roomId;
+    this.currentRoom = room;
+    localStorage.setItem('currentRoomId', this.currentRoomId);
+  
+    this.loadFiles();
+    this.clearCurrentFile();
+    this.showRoomList = false;
+  }
+
+  clearCurrentFile() {
+    this.currentFile = null;
+    this.currentContent = '';
+    this.isFileModified = false;
+  }
+  
+  toggleRoomList() {
+    this.showRoomList = !this.showRoomList;
+  }
+  
+  leaveRoom(room: any) {
+    if (room.createdByUser) {
+      alert("Creators cannot leave their own rooms.");
+      return;
+    }
+    if (confirm(`Leave room "${room.roomName}"?`)) {
+      this.roomService.leaveRoom(room.roomId, this.userId).subscribe({
+        next: () => {
+          this.userRooms = this.userRooms.filter(r => r.roomId !== room.roomId);
+          if (this.currentRoomId === room.roomId) {
+            // Switch to another room or clear
+            if(this.userRooms.length > 0) {
+              this.switchRoom(this.userRooms[0]);
+            }
+            else {
+              this.clearCurrentFile();
+              this.currentRoomId = '';
+              this.currentRoom = null;
+              localStorage.removeItem('currentRoomId');
+            }
+          }
+        },
+        error: (err) => alert(`Failed to leave room: ${err.message || err}`),
+      });
+    }
+  }
+
+  // Create a brand new room with user-provided name
+  newRoom() {
+    const proceed = confirm('Create a new room? Your current unsaved changes will be lost.');
+    if (!proceed) { return; }
+
+    const name = prompt('Enter a name for your room:', 'My Coding Workspace');
+
+    // Clear local state
+    this.currentFile = null;
+    this.currentContent = '';
+    this.files = [];
+    this.isFileModified = false;
+
+    // Clear stored room and create anew
+    localStorage.removeItem('currentRoomId');
+    this.createRoom(name || undefined);
   }
 
     // Initialize workspace - create room if needed, then load files
@@ -73,10 +166,10 @@ export class EditorComponent implements OnInit {
       });
     }
     
-    // Create a new room
-    createRoom() {
+    // Create a new room (optionally using a provided room name)
+    createRoom(roomName?: string) {
       const createRoomRequest = {
-        roomName: 'My Coding Workspace',
+        roomName: (roomName && roomName.trim()) ? roomName.trim() : 'My Coding Workspace',
         creatorId: 'user-' + Date.now() // Simple user ID for now
       };
       
@@ -251,7 +344,8 @@ export class EditorComponent implements OnInit {
   
   // Share room
   shareRoom() {
-    const roomUrl = window.location.href;
+    const origin = window.location.origin;
+    const roomUrl = this.currentRoomId ? `${origin}/${this.currentRoomId}` : origin;
     navigator.clipboard.writeText(roomUrl).then(() => {
       alert('Room URL copied to clipboard!');
     });
