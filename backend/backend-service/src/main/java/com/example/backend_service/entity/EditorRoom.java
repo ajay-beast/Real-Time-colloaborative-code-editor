@@ -1,5 +1,7 @@
 package com.example.backend_service.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -13,6 +15,10 @@ import lombok.Data;
 @Data
 @Entity
 @Table(name = "editor_rooms")
+@JsonIdentityInfo(
+    generator = ObjectIdGenerators.PropertyGenerator.class,
+    property = "roomId"
+)
 public class EditorRoom {
   @Id
   private String roomId; // UUID
@@ -36,4 +42,7 @@ public class EditorRoom {
 
   @OneToMany(mappedBy = "room", cascade = CascadeType.ALL)
   private List<EditorFile> files = new ArrayList<>();
+
+  @OneToMany(mappedBy="room", cascade = CascadeType.ALL)
+  private List<UserRoom> userRooms = new ArrayList<>();
 }

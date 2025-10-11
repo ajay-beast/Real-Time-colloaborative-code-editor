@@ -3,8 +3,10 @@ package com.example.backend_service.services;
 
 import com.example.backend_service.dto.CreateRoomRequest;
 import com.example.backend_service.entity.EditorRoom;
+import com.example.backend_service.entity.UserRoom;
 import com.example.backend_service.exception.ResourceNotFoundException;
 import com.example.backend_service.repository.EditorRoomRepository;
+import com.example.backend_service.repository.UserRoomRepository;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,9 @@ public class RoomService {
   @Autowired
   private EditorRoomRepository roomRepository;
 
+  @Autowired
+  private UserRoomRepository userRoomRepository;
+
   public EditorRoom createRoom(CreateRoomRequest request) {
     String roomId = UUID.randomUUID().toString();
 
@@ -25,7 +30,15 @@ public class RoomService {
     }
 
     EditorRoom room = new EditorRoom(roomId, request.getRoomName(), request.getCreatorId());
-    return roomRepository.save(room);
+    room =  roomRepository.save(room);
+    // create and save userRoom
+    UserRoom userRoom = new UserRoom();
+    userRoom.setUserId(request.getCreatorId());
+    userRoom.setRoom(room);
+    userRoom.setCreatedByUser(true);
+    userRoomRepository.save(userRoom);
+
+    return room;
   }
 
   @Transactional(readOnly = true)

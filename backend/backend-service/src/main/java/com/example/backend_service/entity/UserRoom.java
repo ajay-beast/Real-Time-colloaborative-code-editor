@@ -16,7 +16,6 @@ public class UserRoom {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
-
   private String userId;
 
   @ManyToOne
@@ -24,4 +23,9 @@ public class UserRoom {
   private EditorRoom room;
 
   private boolean createdByUser; // true if creator, false if joined
+
+  public UserRoom() {
+    // Default constructor for JPA
+  }
+
 }

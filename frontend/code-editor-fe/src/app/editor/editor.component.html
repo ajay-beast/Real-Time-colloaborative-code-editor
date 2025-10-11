@@ -7,14 +7,15 @@
       <button class="btn-share-room" (click)="shareRoom()">
         Share Room
       </button>
+      <span class="flex-spacer"></span>
       <button (click)="toggleRoomList()">Rooms ▼</button>
   
       <div *ngIf="showRoomList" class="room-list-dropdown">
-        <div *ngFor="let room of userRooms" [class.active]="room.roomId === currentRoomId" class="room-list-item">
-          <span (click)="switchRoom(room)">
-            {{ room.roomName }} ({{ room.roomId }})
+        <div *ngFor="let userRoom of userRooms" [class.active]="userRoom.room.roomId === currentRoomId" class="room-list-item">
+          <span (click)="switchRoom(userRoom.room)">
+            {{ userRoom.room.roomName }} ({{ userRoom.room.roomId }})
           </span>
-          <button *ngIf="!room.createdByUser" (click)="leaveRoom(room); $event.stopPropagation()">Leave</button>
+          <button *ngIf="!userRoom.createdByUser" (click)="leaveRoom(userRoom); $event.stopPropagation()">Leave</button>
         </div>
       </div>
     </div>
@@ -61,6 +62,7 @@
         </div>
 
         <ngx-monaco-editor 
+          *ngIf="currentFile"
           [options]="editorOptions" 
           [(ngModel)]="currentContent"
           (ngModelChange)="onContentChange($event)"
@@ -97,6 +99,18 @@
             <button type="button" (click)="showCreateFileDialog = false" class="btn-cancel">Cancel</button>
           </div>
         </form>
+      </div>
+    </div>
+
+        <!-- Join Room Dialog -->
+    <div class="modal" *ngIf="showJoinRoomDialog">
+      <div class="modal-content">
+        <h3>Join Room?</h3>
+        <p>Do you want to join this room: <b>{{ pendingJoinRoomId }}</b>?</p>
+        <div class="form-actions">
+          <button class="btn-create" (click)="joinPendingRoom()">Yes, Join</button>
+          <button class="btn-cancel" (click)="cancelJoinRoom()">No</button>
+        </div>
       </div>
     </div>
   </div>

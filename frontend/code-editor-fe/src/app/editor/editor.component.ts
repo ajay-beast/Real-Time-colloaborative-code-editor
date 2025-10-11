@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FileService } from '../services/file.service';
 import { RoomService } from '../services/room.service';
+import { UserroomService } from '../services/userroom.service';
 
 
 @Component({
@@ -34,39 +35,97 @@ export class EditorComponent implements OnInit {
   showCreateFileDialog = false;
   newFileName = '';
   isLoading = true; // New loading state
-  userId = 'user123'; // your user ID
+  userId = 'user321'; // your user ID
   userRooms: any[] = [];
   showRoomList = false;
+  showJoinRoomDialog = false;
+  pendingJoinRoomId: string | null = null;
   
   constructor(
     private fileService: FileService,
     private roomService: RoomService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private userroomService: UserroomService
   ) {}
   
   ngOnInit() {
+//     this.loadUserRooms();
+//     // If roomId is present in URL, use it and persist
+//     const roomIdFromRoute = this.route.snapshot.paramMap.get('roomId');
+//     console.log('Room ID from route:', roomIdFromRoute);
+//     if (roomIdFromRoute && roomIdFromRoute.trim()) {
+//           // Check if user is already in this room 
+//           console.log('Comparing roomIdFromRoute:', roomIdFromRoute, typeof roomIdFromRoute);
+// console.log('UserRooms room IDs:', this.userRooms.map(r => [r.room.roomId, typeof r.room.roomId]));
+
+//       const alreadyInRoom = this.userRooms.some(r => r.room.roomId === roomIdFromRoute);
+//       console.log('Is user already in room?', alreadyInRoom);
+//       if (!alreadyInRoom) {
+//         this.showJoinRoomDialog = true;
+//         this.pendingJoinRoomId = roomIdFromRoute;
+//         return; // Wait for user action
+//       }
+//       else{      
+//       this.currentRoomId = roomIdFromRoute.trim();
+//       localStorage.setItem('currentRoomId', this.currentRoomId);
+//       }
+//     }
+//     this.initializeWorkspace();
     this.loadUserRooms();
-    // If roomId is present in URL, use it and persist
-    const roomIdFromRoute = this.route.snapshot.paramMap.get('roomId');
-    if (roomIdFromRoute && roomIdFromRoute.trim()) {
-      this.currentRoomId = roomIdFromRoute.trim();
-      localStorage.setItem('currentRoomId', this.currentRoomId);
-    }
-    this.initializeWorkspace();
   }
 
   loadUserRooms() {
-    this.roomService.getUserRooms(this.userId).subscribe({
-      next: (rooms) => {
-        this.userRooms = rooms;
-        // If no roomId set, but rooms exist, set first as active
-        if (!this.currentRoomId && rooms.length > 0) {
-          this.switchRoom(rooms[0]);
+    // this.userroomService.getUserRooms(this.userId).subscribe({
+    //   next: (userrooms) => {
+    //     this.userRooms = userrooms;
+    //    console.log('Loaded user rooms:', this.userRooms);
+
+    //     // If no roomId set, but rooms exist, set first as active
+    //     if (!this.currentRoomId && userrooms.length > 0) {
+    //       this.switchRoom(userrooms[0].room);
+    //     }
+    //   },
+    //   error: (e) => console.error('Failed to load user rooms', e)
+    // });
+     this.userroomService.getUserRooms(this.userId).subscribe({
+    next: (userrooms) => {
+      this.userRooms = userrooms;
+      console.log('Loaded user rooms:', this.userRooms);
+
+      const roomIdFromRoute = this.route.snapshot.paramMap.get('roomId');
+      console.log('Room ID from route:', roomIdFromRoute);
+
+      if (roomIdFromRoute && roomIdFromRoute.trim()) {
+        const alreadyInRoom = this.userRooms.some(
+          r => r.room?.roomId?.trim() === roomIdFromRoute.trim()
+        );
+
+        console.log('Is user already in room?', alreadyInRoom);
+
+        if (!alreadyInRoom) {
+          this.showJoinRoomDialog = true;
+          this.pendingJoinRoomId = roomIdFromRoute;
+          return;
+        } else {
+          this.currentRoomId = roomIdFromRoute.trim();
+          localStorage.setItem('currentRoomId', this.currentRoomId);
         }
-      },
-      error: (e) => console.error('Failed to load user rooms', e)
-    });
+      }
+
+      // If no roomId set, but rooms exist, set first as active
+      if (!this.currentRoomId && userrooms.length > 0) {
+        this.switchRoom(userrooms[0].room);
+      }
+
+      // Continue workspace setup
+      this.initializeWorkspace();
+    },
+    error: (e) => {
+      console.error('Failed to load user rooms', e);
+      this.initializeWorkspace(); // fallback init
+    }
+  });
   }
 
   switchRoom(room: any) {
@@ -77,10 +136,11 @@ export class EditorComponent implements OnInit {
     
     this.currentRoomId = room.roomId;
     this.currentRoom = room;
+    console.log('Switched to room:', room);
     localStorage.setItem('currentRoomId', this.currentRoomId);
   
-    this.loadFiles();
     this.clearCurrentFile();
+    this.loadFiles();
     this.showRoomList = false;
   }
 
@@ -94,19 +154,19 @@ export class EditorComponent implements OnInit {
     this.showRoomList = !this.showRoomList;
   }
   
-  leaveRoom(room: any) {
-    if (room.createdByUser) {
+  leaveRoom(userroom: any) {
+    if (userroom.createdByUser) {
       alert("Creators cannot leave their own rooms.");
       return;
     }
-    if (confirm(`Leave room "${room.roomName}"?`)) {
-      this.roomService.leaveRoom(room.roomId, this.userId).subscribe({
+    if (confirm(`Leave room "${userroom.room.roomName}"?`)) {
+      this.userroomService.leaveRoom(userroom.room.roomId, this.userId).subscribe({
         next: () => {
-          this.userRooms = this.userRooms.filter(r => r.roomId !== room.roomId);
-          if (this.currentRoomId === room.roomId) {
+          this.userRooms = this.userRooms.filter(r => r.room.roomId !== userroom.room.roomId);
+          if (this.currentRoomId === userroom.room.roomId) {
             // Switch to another room or clear
             if(this.userRooms.length > 0) {
-              this.switchRoom(this.userRooms[0]);
+              this.switchRoom(this.userRooms[0].room);
             }
             else {
               this.clearCurrentFile();
@@ -147,6 +207,10 @@ export class EditorComponent implements OnInit {
       this.currentRoomId = localStorage.getItem('currentRoomId') || '';
       console.log('Current room ID from local storage:', this.currentRoomId);
 
+      if(!this.currentRoomId){
+        this.createRoom();
+        return;
+      }
       // First check if room exists
       this.roomService.roomExists(this.currentRoomId).subscribe({
         next: (exists) => {
@@ -155,13 +219,17 @@ export class EditorComponent implements OnInit {
             this.loadRoom();
           } else {
             // Room doesn't exist, create it
+           if(!this.currentRoomId) {
             this.createRoom();
+           }
           }
         },
         error: (error) => {
           console.error('Error checking room:', error);
-          // If check fails, try to create room anyway
-          this.createRoom();
+          // // If check fails, try to create room if user
+          // if(!this.currentRoomId){
+          //     this.createRoom();
+          // }
         }
       });
     }
@@ -170,7 +238,7 @@ export class EditorComponent implements OnInit {
     createRoom(roomName?: string) {
       const createRoomRequest = {
         roomName: (roomName && roomName.trim()) ? roomName.trim() : 'My Coding Workspace',
-        creatorId: 'user-' + Date.now() // Simple user ID for now
+        creatorId: this.userId // Simple user ID for now
       };
       
       this.roomService.createRoom(createRoomRequest.roomName, createRoomRequest.creatorId).subscribe({
@@ -178,14 +246,15 @@ export class EditorComponent implements OnInit {
           this.currentRoom = room;
           this.currentRoomId = room.roomId; // Use the generated room ID
           console.log('Room created successfully:', room);
-          this.loadFiles();
+          // this.loadFiles();
+          this.loadRoom();
           localStorage.setItem('currentRoomId', this.currentRoomId);
         },
         error: (error) => {
           console.error('Error creating room:', error);
           // If room creation fails, still try to load files with hardcoded ID
-          this.currentRoom = { roomName: 'Default Workspace', roomId: this.currentRoomId };
-          this.loadFiles();
+          // this.currentRoom = { roomName: 'Default Workspace', roomId: this.currentRoomId };
+          // this.loadFiles();
         }
       });
     }
@@ -201,7 +270,7 @@ export class EditorComponent implements OnInit {
         error: (error) => {
           console.error('Error loading room:', error);
           // If loading fails, create new room
-          this.createRoom();
+          // this.createRoom();
         }
       });
     }
@@ -224,7 +293,10 @@ export class EditorComponent implements OnInit {
           console.error('Error loading files:', error);
           // Even if file loading fails, show the editor
           this.files = [];
-          this.isLoading = false;
+        this.currentFile = null;
+         this.currentContent = '';
+        this.isFileModified = false;
+        this.isLoading = false;
         }
       });
     }
@@ -391,5 +463,32 @@ export class EditorComponent implements OnInit {
       'css': 'css'
     };
     return languageMap[extension || ''] || 'plaintext';
+  }
+
+    // Call this when user clicks "Yes" in dialog
+  joinPendingRoom() {
+    if (!this.pendingJoinRoomId) return;
+    this.userroomService.joinRoom(this.pendingJoinRoomId, this.userId).subscribe({
+      next: () => {
+        this.currentRoomId = this.pendingJoinRoomId!;
+        localStorage.setItem('currentRoomId', this.currentRoomId);
+        this.showJoinRoomDialog = false;
+        this.pendingJoinRoomId = null;
+        this.loadUserRooms();
+        // this.initializeWorkspace();
+      },
+      error: (err) => {
+        alert('Failed to join room: ' + (err.message || err));
+        this.showJoinRoomDialog = false;
+        this.pendingJoinRoomId = null;
+        this.initializeWorkspace();
+      }
+    });
+  }
+
+   cancelJoinRoom() {
+    this.showJoinRoomDialog = false;
+    this.pendingJoinRoomId = null;
+    this.initializeWorkspace();
   }
 }
