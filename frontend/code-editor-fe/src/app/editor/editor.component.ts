@@ -520,8 +520,6 @@ openFile(file: any) {
 
   // Ensure editor is ready
   if (!this.editor) {
-    // Defer until onEditorInit sets the editor
-    // Call openFile again once editor is ready
     const wait = setInterval(() => {
       if (this.editor) {
         clearInterval(wait);
@@ -531,70 +529,131 @@ openFile(file: any) {
     return;
   }
 
-  // Get or create a model for this file
-  let model = this.modelsByFileId.get(file.id);
-  const language = this.getLanguageFromFileName(file.fileName);
+  console.log("[openFile] calling getSnapshot for file:", file.fileName);
+  // 1) Fetch authoritative snapshot (content + revision)
+  this.fileService.getSnapshot(this.currentRoomId, file.id).subscribe({
+    next: (snapshot) => {
+      const snapshotContent = snapshot?.content ?? (file.content || '');
+      const snapshotRevision = snapshot?.revision ?? 0;
 
-  this.isInitializingFile = true;
-  this.suspendedLocalEdit = true;
+      // 2) Prepare model and suppress outbound ops while setting content
+      let model = this.modelsByFileId.get(file.id);
+      const language = this.getLanguageFromFileName(file.fileName);
 
-  if (!model) {
-    model = (window as any).monaco.editor.createModel(file.content || '', language);
-    this.modelsByFileId.set(file.id, model);
+      this.isInitializingFile = true;
+      this.suspendedLocalEdit = true;
 
-    // Attach a one-time listener to clear isInitializingFile only after Monaco’s first model change
-    const disposer = model.onDidChangeContent(() => {
-      // First change due to programmatic set or internal normalization
-      if (this.isInitializingFile) {
-        this.isInitializingFile = false;
+      if (!model) {
+        model = (window as any).monaco.editor.createModel(snapshotContent, language);
+        this.modelsByFileId.set(file.id, model);
+
+        // One-time listener to clear init only after Monaco's first model change
+        const disposer = model.onDidChangeContent(() => {
+          if (this.isInitializingFile) {
+            this.isInitializingFile = false;
+          }
+          disposer.dispose();
+          this.firstChangeDisposerByFileId.delete(file.id);
+        });
+        this.firstChangeDisposerByFileId.set(file.id, disposer);
+      } else {
+        // Update model if content differs (avoid unnecessary change events)
+        if (model.getValue() !== snapshotContent) {
+          model.setValue(snapshotContent);
+        }
+        // Ensure a one-time disposer exists to clear init on first change
+        if (!this.firstChangeDisposerByFileId.has(file.id)) {
+          const disposer = model.onDidChangeContent(() => {
+            if (this.isInitializingFile) {
+              this.isInitializingFile = false;
+            }
+            disposer.dispose();
+            this.firstChangeDisposerByFileId.delete(file.id);
+          });
+          this.firstChangeDisposerByFileId.set(file.id, disposer);
+        }
       }
-      // Dispose this one-time listener
-      disposer.dispose();
-      this.firstChangeDisposerByFileId.delete(file.id);
-    });
-    this.firstChangeDisposerByFileId.set(file.id, disposer);
-  } else {
-    // If re-opening same file or switching back, update content if DB has newer content
-    // Only when the content is actually different to avoid extra changes
-    if (model.getValue() !== (file.content || '')) {
-      model.setValue(file.content || '');
-    }
-    // If there is no one-time listener for this model yet, set one.
-    if (!this.firstChangeDisposerByFileId.has(file.id)) {
-      const disposer = model.onDidChangeContent(() => {
+
+      // 3) Attach model and language to the single Monaco instance
+      this.editor.setModel(model);
+      // after this.editor.setModel(model);
+console.log('[openFile] snapshot applied: len=', model.getValue().length, 'rev=', snapshotRevision);
+
+      (window as any).monaco.editor.setModelLanguage(model, language);
+
+      // 4) Initialize revision from snapshot (authoritative)
+      this.fileRevisionMap[file.id] = snapshotRevision;
+
+      // 5) Join WS session AFTER snapshot is applied
+      this.collabService.joinFileSession(this.currentRoomId, file.id, this.userId);
+
+      // 6) Release suppression; if Monaco didn't fire a change, clear init here
+      queueMicrotask(() => {
+        this.suspendedLocalEdit = false;
         if (this.isInitializingFile) {
           this.isInitializingFile = false;
         }
-        disposer.dispose();
-        this.firstChangeDisposerByFileId.delete(file.id);
       });
-      this.firstChangeDisposerByFileId.set(file.id, disposer);
-    }
-  }
+    },
+    error: (err) => {
+      console.error('[openFile] Snapshot fetch failed, falling back to DB content', err);
 
-  // Attach model to the single editor instance
-  this.editor.setModel(model);
-  // Set language in case the model was created earlier with different language
-  (window as any).monaco.editor.setModelLanguage(model, language);
+      // Fallback to previous logic with file.content if snapshot unavailable
+      let model = this.modelsByFileId.get(file.id);
+      const language = this.getLanguageFromFileName(file.fileName);
 
-  // Always join the WS file session after model is attached
-  this.collabService.joinFileSession(this.currentRoomId, file.id, this.userId);
+      this.isInitializingFile = true;
+      this.suspendedLocalEdit = true;
 
-  // Initialize revision for the file if unknown; ideally get latestRevision from server
-  if (this.fileRevisionMap[file.id] == null) {
-    this.fileRevisionMap[file.id] = 0;
-  }
+      const content = file.content || '';
 
-  // Release suppression after microtask if first-change listener didn’t fire yet
-  queueMicrotask(() => {
-    this.suspendedLocalEdit = false;
-    // If for some reason Monaco didn’t fire a change (e.g., content identical),
-    // clear init guard here as a failsafe.
-    if (this.isInitializingFile) {
-      this.isInitializingFile = false;
+      if (!model) {
+        model = (window as any).monaco.editor.createModel(content, language);
+        this.modelsByFileId.set(file.id, model);
+        const disposer = model.onDidChangeContent(() => {
+          if (this.isInitializingFile) {
+            this.isInitializingFile = false;
+          }
+          disposer.dispose();
+          this.firstChangeDisposerByFileId.delete(file.id);
+        });
+        this.firstChangeDisposerByFileId.set(file.id, disposer);
+      } else {
+        if (model.getValue() !== content) {
+          model.setValue(content);
+        }
+        if (!this.firstChangeDisposerByFileId.has(file.id)) {
+          const disposer = model.onDidChangeContent(() => {
+            if (this.isInitializingFile) {
+              this.isInitializingFile = false;
+            }
+            disposer.dispose();
+            this.firstChangeDisposerByFileId.delete(file.id);
+          });
+          this.firstChangeDisposerByFileId.set(file.id, disposer);
+        }
+      }
+
+      this.editor.setModel(model);
+      (window as any).monaco.editor.setModelLanguage(model, language);
+
+      // Without snapshot, start from 0 unless you return latestRevision in your existing file payload
+      if (this.fileRevisionMap[file.id] == null) {
+        this.fileRevisionMap[file.id] = 0;
+      }
+
+      this.collabService.joinFileSession(this.currentRoomId, file.id, this.userId);
+
+      queueMicrotask(() => {
+        this.suspendedLocalEdit = false;
+        if (this.isInitializingFile) {
+          this.isInitializingFile = false;
+        }
+      });
     }
   });
 }
+
 
 
 

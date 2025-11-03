@@ -6,6 +6,7 @@ import com.example.backend_service.dto.DocumentState;
 import com.example.backend_service.dto.JoinMessage;
 import com.example.backend_service.dto.OperationMessage;
 import com.example.backend_service.dto.OtOperation;
+import com.example.backend_service.repository.EditorFileRepository;
 import com.example.backend_service.services.UserRoomService;
 import java.util.List;
 import java.util.Map;
@@ -21,26 +22,42 @@ import org.springframework.web.bind.annotation.RestController;
 public class CollaborationWebSocketController {
 
   private static final Logger log = LoggerFactory.getLogger(CollaborationWebSocketController.class);
-  @Autowired
+
   private SimpMessagingTemplate messagingTemplate;
 
-  @Autowired
   private UserRoomService userRoomService;
 
   // Map<roomId, Map<fileId, DocumentState>>
-  private final Map<String, Map<Long, DocumentState>> roomFileDocs = new ConcurrentHashMap<>();
+  private Map<String, Map<Long, DocumentState>> roomFileDocs = new ConcurrentHashMap<>();
+
+  private EditorFileRepository fileRepository;
+
+  @Autowired
+  public CollaborationWebSocketController(
+      SimpMessagingTemplate messagingTemplate,
+      Map<String, Map<Long, DocumentState>> roomFileDocs, UserRoomService userRoomService, EditorFileRepository fileRepository) {
+    this.messagingTemplate = messagingTemplate;
+    this.roomFileDocs = roomFileDocs;
+    this.userRoomService = userRoomService;
+    this.fileRepository = fileRepository;
+  }
 
   @MessageMapping("/join")
   public void joinFileSession(JoinMessage msg) {
-    // Validate user belongs to the room, prevent unauthorized join
-//    if (!userRoomService.isUserInRoom(msg.getUserId(), msg.getRoomId())) {
-//      System.out.println("User " + msg.getUserId() + " is not authorized for room " + msg.getRoomId());
-//      return;
-//    }
-
     roomFileDocs.putIfAbsent(msg.getRoomId(), new ConcurrentHashMap<>());
     Map<Long, DocumentState> files = roomFileDocs.get(msg.getRoomId());
-    files.putIfAbsent(msg.getFileId(), new DocumentState());
+    files.computeIfAbsent(msg.getFileId(), id -> {
+      // Seed from DB
+      String dbContent  = "";
+      dbContent = fileRepository.findContentByFileId(id);
+      log.info("file content while joining from db : {}", dbContent);
+      DocumentState seeded = new DocumentState();
+      synchronized (seeded) {
+        seeded.setContentDirect(dbContent);
+        seeded.resetRevision(0);
+      }
+      return seeded;
+    });
     log.info("User {} joined file {} in room {}", msg.getUserId(), msg.getFileId(), msg.getRoomId());
   }
 

@@ -8,6 +8,7 @@ public class DocumentState {
   private String content = "";
   private final List<OtOperation> operationLog = new ArrayList<>();
   private int currentRevision = 0;
+  private volatile boolean dirty = false;
 
   public synchronized void apply(OtOperation op) {
     if ("insert".equals(op.getType())) {
@@ -29,6 +30,7 @@ public class DocumentState {
   public synchronized void appendOp(OtOperation op) {
     operationLog.add(op);
     currentRevision++;
+    dirty = true;
   }
 
   public synchronized List<OtOperation> getOpsSince(int revision) {
@@ -43,4 +45,22 @@ public class DocumentState {
   }
 
   public synchronized int getCurrentRevision() { return currentRevision; }
+
+  public synchronized boolean isDirty() {
+    return dirty;
+  }
+
+  public synchronized void markPersisted() {
+    dirty = false;
+  }
+
+  public synchronized void setContentDirect(String content) {
+    this.content = content != null ? content : "";
+  }
+
+  public synchronized void resetRevision(int rev) {
+    this.currentRevision = Math.max(0, rev);
+    this.operationLog.clear();
+    this.dirty = false;
+  }
 }

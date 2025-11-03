@@ -86,4 +86,7 @@ public interface EditorFileRepository extends JpaRepository<EditorFile, Long> {
   // Find duplicate file names in room (for validation)
   @Query("SELECT f.fileName FROM EditorFile f WHERE f.room.roomId = :roomId GROUP BY f.fileName HAVING COUNT(f.fileName) > 1")
   List<String> findDuplicateFileNamesInRoom(@Param("roomId") String roomId);
+
+  @Query("SELECT f.content FROM EditorFile f WHERE f.id = :fileId")
+  String findContentByFileId(Long fileId);
 }
