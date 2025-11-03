@@ -61,14 +61,13 @@
           <button (click)="saveFile()" class="btn-save" [disabled]="!isFileModified">Save</button>
         </div>
 
-        <ngx-monaco-editor 
-          *ngIf="currentFile"
-          [options]="editorOptions" 
-          [(ngModel)]="currentContent"
-          (ngModelChange)="onContentChange($event)"
-          (onInit)="onEditorInit($event)"
-          class="monaco-editor">
-        </ngx-monaco-editor>
+    <ngx-monaco-editor
+      [options]="editorOptions"
+      [(ngModel)]="currentContent"
+      (ngModelChange)="onContentChange($event)"
+      (onInit)="onEditorInit($event)"
+      class="monaco-editor">
+    </ngx-monaco-editor>
 
         <!-- Placeholder when no file selected -->
         <div *ngIf="!currentFile" class="no-file-selected">

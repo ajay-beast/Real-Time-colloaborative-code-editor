@@ -4,9 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { RouterModule, Routes } from '@angular/router';
 import { MonacoEditorModule } from 'ngx-monaco-editor';
-
 import { AppComponent } from './app.component';
 import { EditorComponent } from './editor/editor.component';
+
 
 const routes: Routes = [
   { path: '', component: EditorComponent },

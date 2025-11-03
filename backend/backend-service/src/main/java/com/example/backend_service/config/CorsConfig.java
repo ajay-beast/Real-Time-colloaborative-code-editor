@@ -21,6 +21,13 @@ public class CorsConfig implements org.springframework.web.servlet.config.annota
         .allowedHeaders("*")
         .allowCredentials(true)
         .maxAge(maxAge);
+
+    registry.addMapping("/ws/**")
+        .allowedOrigins(allowedOrigins)
+        .allowedMethods("GET", "POST", "OPTIONS")
+        .allowedHeaders("*")
+        .allowCredentials(true)
+        .maxAge(maxAge);
   }
 
 }
