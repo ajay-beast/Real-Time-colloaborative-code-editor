@@ -2,9 +2,11 @@ package com.example.backend_service.repository;
 
 import com.example.backend_service.entity.EditorFile;
 import com.example.backend_service.entity.EditorRoom;
+import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -89,4 +91,9 @@ public interface EditorFileRepository extends JpaRepository<EditorFile, Long> {
 
   @Query("SELECT f.content FROM EditorFile f WHERE f.id = :fileId")
   String findContentByFileId(Long fileId);
+
+  @Modifying
+  @Transactional
+  @Query("UPDATE EditorFile f SET f.content = :content, f.updatedAt = CURRENT_TIMESTAMP WHERE f.id = :fileId")
+  void updateContentByFileId(long fileId, String content);
 }

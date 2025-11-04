@@ -58,7 +58,7 @@
         <div class="editor-header" *ngIf="currentFile">
           <span class="current-file">{{ currentFile.fileName }}</span>
           <span class="file-language">{{ currentFile.language }}</span>
-          <button (click)="saveFile()" class="btn-save" [disabled]="!isFileModified">Save</button>
+          <!-- <button (click)="saveFile()" class="btn-save" [disabled]="!isFileModified">Save</button> -->
         </div>
 
     <ngx-monaco-editor

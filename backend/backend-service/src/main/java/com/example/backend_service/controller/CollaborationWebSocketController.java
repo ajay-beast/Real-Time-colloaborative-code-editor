@@ -10,6 +10,7 @@ import com.example.backend_service.repository.EditorFileRepository;
 import com.example.backend_service.services.UserRoomService;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +32,11 @@ public class CollaborationWebSocketController {
   private Map<String, Map<Long, DocumentState>> roomFileDocs = new ConcurrentHashMap<>();
 
   private EditorFileRepository fileRepository;
+
+  // Debounced persistence state
+  private final Map<String, Map<Long, Long>> lastPersistAt = new ConcurrentHashMap<>();
+  private final long DEBOUNCE_MS = 1500; // 1.5s after the last op per (roomId, fileId)
+
 
   @Autowired
   public CollaborationWebSocketController(
@@ -84,8 +90,42 @@ public class CollaborationWebSocketController {
       // Broadcast to all clients subscribed to this room topic
       log.info("Broadcasting transformed operation for room {}, file {}: {}", roomId, fileId, transformedOp);
       messagingTemplate.convertAndSend("/topic/room." + roomId, transformedOp);
+      scheduleDebouncedPersist(roomId, fileId, doc);
     }
   }
+
+  private void scheduleDebouncedPersist(String roomId, long fileId, DocumentState doc) {
+    long now = System.currentTimeMillis();
+    lastPersistAt.putIfAbsent(roomId, new ConcurrentHashMap<>());
+    Map<Long, Long> times = lastPersistAt.get(roomId);
+    times.put(fileId, now);
+
+    // Run async; replace with your TaskExecutor if available
+    CompletableFuture.runAsync(() -> {
+      try { Thread.sleep(DEBOUNCE_MS); } catch (InterruptedException ignored) {}
+
+      Long last = times.get(fileId);
+      if (last == null) return;
+
+      // Only persist if no newer ops arrived in the debounce window and doc is dirty
+      if ((System.currentTimeMillis() - last) >= DEBOUNCE_MS && doc.isDirty()) {
+        String content;
+        synchronized (doc) {
+          content = doc.getContent();
+          doc.markPersisted();
+        }
+        try {
+          fileRepository.updateContentByFileId(fileId, content); // implement/update this repository method
+          log.info("Persisted file {} content ({} chars) to DB (room {})", fileId, content.length(), roomId);
+        } catch (Exception e) {
+          log.error("Failed to persist file {}: {}", fileId, e.getMessage(), e);
+          doc.setDirty();
+          // Optionally: keep doc dirty so it will be retried on next schedule
+        }
+      }
+    });
+  }
+
 
   // Simplified OT transform example
   private OtOperation transform(OtOperation inc, List<OtOperation> con) {

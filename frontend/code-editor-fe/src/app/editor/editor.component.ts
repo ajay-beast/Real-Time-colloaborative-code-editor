@@ -165,10 +165,10 @@ private roomSubscribed = new Set<string>(); // roomId subscribed topics
 
   switchRoom(room: any) {
     if (this.currentRoomId === room.roomId) return;
-    if (this.isFileModified) {
-      if (!confirm('You have unsaved changes. Continue without saving?'))
-        return;
-    }
+    // if (this.isFileModified) {
+    //   if (!confirm('You have unsaved changes. Continue without saving?'))
+    //     return;
+    // }
 
     this.currentRoomId = room.roomId;
     this.currentRoom = room;
@@ -512,7 +512,7 @@ private roomSubscribed = new Set<string>(); // roomId subscribed topics
 openFile(file: any) {
   // Save current file if needed
   if (this.isFileModified) {
-    this.saveFile();
+    // this.saveFile();
   }
 
   this.currentFile = file;
@@ -692,28 +692,28 @@ console.log('[openFile] snapshot applied: len=', model.getValue().length, 'rev='
   }
 
   // Save current file
-  saveFile() {
-    if (!this.currentFile || !this.isFileModified) {
-      return;
-    }
+  // saveFile() {
+  //   if (!this.currentFile || !this.isFileModified) {
+  //     return;
+  //   }
 
-    const request = {
-      content: this.currentContent,
-      language: this.currentFile.language,
-    };
+  //   const request = {
+  //     content: this.currentContent,
+  //     language: this.currentFile.language,
+  //   };
 
-    this.fileService.updateFile(this.currentFile.id, request).subscribe({
-      next: (updatedFile) => {
-        this.currentFile = updatedFile;
-        this.isFileModified = false;
-        console.log('File saved successfully');
-      },
-      error: (error: any) => {
-        console.error('Error saving file:', error);
-        alert('Error saving file');
-      },
-    });
-  }
+  //   this.fileService.updateFile(this.currentFile.id, request).subscribe({
+  //     next: (updatedFile) => {
+  //       this.currentFile = updatedFile;
+  //       this.isFileModified = false;
+  //       console.log('File saved successfully');
+  //     },
+  //     error: (error: any) => {
+  //       console.error('Error saving file:', error);
+  //       alert('Error saving file');
+  //     },
+  //   });
+  // }
 
   // Delete file
   deleteFile(fileId: number, event: Event) {

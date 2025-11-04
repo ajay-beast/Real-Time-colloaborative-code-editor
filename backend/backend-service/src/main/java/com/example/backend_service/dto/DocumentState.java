@@ -63,4 +63,8 @@ public class DocumentState {
     this.operationLog.clear();
     this.dirty = false;
   }
+
+  public void setDirty() {
+    this.dirty = true;
+  }
 }
