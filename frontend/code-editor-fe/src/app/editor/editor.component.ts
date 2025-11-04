@@ -222,12 +222,12 @@ private roomSubscribed = new Set<string>(); // roomId subscribed topics
 
   // Create a brand new room with user-provided name
   newRoom() {
-    const proceed = confirm(
-      'Create a new room? Your current unsaved changes will be lost.'
-    );
-    if (!proceed) {
-      return;
-    }
+    // const proceed = confirm(
+    //   'Create a new room? Your current unsaved changes will be lost.'
+    // );
+    // if (!proceed) {
+    //   return;
+    // }
 
     const name = prompt('Enter a name for your room:', 'My Coding Workspace');
 
@@ -329,9 +329,14 @@ private roomSubscribed = new Set<string>(); // roomId subscribed topics
         console.log('Files loaded:', files.length);
 
         // Open first file if available
-        if (files.length > 0 && !this.currentFile) {
-          this.openFile(files[0]);
+         // If currentFile is gone, select the first available
+      if (this.files.length > 0) {
+        if (!this.currentFile || !this.files.some(f => f.id === this.currentFile.id)) {
+          this.openFile(this.files[0]);
         }
+      } else {
+        this.clearCurrentFile();
+      }
 
         this.isLoading = false; // Hide loading state
       },
@@ -339,8 +344,7 @@ private roomSubscribed = new Set<string>(); // roomId subscribed topics
         console.error('Error loading files:', error);
         // Even if file loading fails, show the editor
         this.files = [];
-        this.currentFile = null;
-        this.currentContent = '';
+       this.clearCurrentFile();
         this.isFileModified = false;
         this.isLoading = false;
       },
@@ -724,9 +728,19 @@ console.log('[openFile] snapshot applied: len=', model.getValue().length, 'rev='
         next: () => {
           this.files = this.files.filter((f) => f.id !== fileId);
           if (this.currentFile?.id === fileId) {
-            this.currentFile = null;
-            this.currentContent = '';
-            this.isFileModified = false;
+            const idx = this.files.findIndex(f => f.id === fileId);
+        // idx is -1 now because we filtered; compute neighbor based on previous position
+        // Try next file at same position, else previous one
+        const next =
+          this.files[Math.min(idx, this.files.length - 1)] ??
+          this.files[this.files.length - 1];
+
+        if (next) {
+          this.openFile(next);
+        } else {
+          // No files left
+          this.clearCurrentFile();
+        }
           }
         },
         error: (error: any) => {

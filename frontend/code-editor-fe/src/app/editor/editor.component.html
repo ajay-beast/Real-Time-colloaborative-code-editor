@@ -61,19 +61,30 @@
           <!-- <button (click)="saveFile()" class="btn-save" [disabled]="!isFileModified">Save</button> -->
         </div>
 
-    <ngx-monaco-editor
-      [options]="editorOptions"
-      [(ngModel)]="currentContent"
-      (ngModelChange)="onContentChange($event)"
-      (onInit)="onEditorInit($event)"
-      class="monaco-editor">
-    </ngx-monaco-editor>
+  <ng-container *ngIf="currentFile; else noFile">
+        <ngx-monaco-editor
+          [options]="editorOptions"
+          [(ngModel)]="currentContent"
+          (ngModelChange)="onContentChange($event)"
+          (onInit)="onEditorInit($event)"
+          class="monaco-editor">
+        </ngx-monaco-editor>
+      </ng-container>
+
+      <!-- Placeholder when no file selected -->
+      <ng-template #noFile>
+        <div class="no-file-selected">
+          <h3>No files in this room yet</h3>
+          <p>Create a file to start coding</p>
+          <button (click)="showCreateFileDialog = true" class="btn-new-file">+ Create File</button>
+        </div>
+      </ng-template>
 
         <!-- Placeholder when no file selected -->
-        <div *ngIf="!currentFile" class="no-file-selected">
+        <!-- <div *ngIf="!currentFile" class="no-file-selected">
           <h3>Welcome to your collaborative workspace!</h3>
           <p>Create a file to start coding</p>
-        </div>
+        </div> -->
       </div>
     </div>
 
