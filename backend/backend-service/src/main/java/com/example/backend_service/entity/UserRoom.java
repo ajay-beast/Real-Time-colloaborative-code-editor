@@ -16,7 +16,9 @@ public class UserRoom {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
-  private String userId;
+  @ManyToOne
+  @JoinColumn(name = "user_id", referencedColumnName = "username") // FK → users.username
+  private AppUser user;
 
   @ManyToOne
   @JoinColumn(name = "room_id")

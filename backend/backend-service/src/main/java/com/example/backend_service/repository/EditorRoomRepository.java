@@ -21,9 +21,7 @@ public interface EditorRoomRepository extends JpaRepository<EditorRoom, String> 
   @Query("SELECT r FROM EditorRoom r WHERE r.isActive = true")
   List<EditorRoom> findAllActiveRooms();
 
-  // Find rooms created by a specific user
-  @Query("SELECT r FROM EditorRoom r WHERE r.creatorId = :creatorId")
-  List<EditorRoom> findRoomsByCreator(@Param("creatorId") String creatorId);
+
 
   // Find rooms created after a specific date
   @Query("SELECT r FROM EditorRoom r WHERE r.createdAt >= :date")

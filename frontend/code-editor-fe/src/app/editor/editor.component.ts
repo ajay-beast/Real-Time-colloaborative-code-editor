@@ -7,6 +7,7 @@ import {
   CollabServiceService,
   OtOperation,
 } from '../services/collab-service.service';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-editor',
@@ -37,7 +38,7 @@ export class EditorComponent implements OnInit {
   showCreateFileDialog = false;
   newFileName = '';
   isLoading = true; // New loading state
-  userId = 'user321'; // your user ID
+  userId = this.auth.currentUser?.username; // your user ID
   userRooms: any[] = [];
   showRoomList = false;
   showJoinRoomDialog = false;
@@ -51,10 +52,11 @@ export class EditorComponent implements OnInit {
 private modelsByFileId = new Map<number, any>();
 private firstChangeDisposerByFileId = new Map<number, any>();
 private roomSubscribed = new Set<string>(); // roomId subscribed topics
-
+public username = this.auth.currentUser?.displayName || this.auth.currentUser?.username || 'User';
 
 
   constructor(
+    private auth: AuthService,
     private fileService: FileService,
     private roomService: RoomService,
     private route: ActivatedRoute,
@@ -887,4 +889,10 @@ console.log('[openFile] snapshot applied: len=', model.getValue().length, 'rev='
     }
     this.suspendedLocalEdit = false;
   }
+
+  logout() {
+  // Close WS if needed
+  this.auth.logout();
+  this.router.navigate(['/signin']);
+}
 }

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
@@ -24,7 +26,6 @@ public class EditorRoom {
   private String roomId; // UUID
 
   private String roomName;
-  private String creatorId;
   private LocalDateTime createdAt;
   private boolean isActive;
 
@@ -32,10 +33,10 @@ public class EditorRoom {
     // Default constructor for JPA
   }
 
-  public EditorRoom(String roomId, String roomName, String creatorId) {
+  public EditorRoom(String roomId, String roomName, AppUser creator) {
     this.roomId = roomId;
     this.roomName = roomName;
-    this.creatorId = creatorId;
+    this.creator = creator;
     this.createdAt = LocalDateTime.now();
     this.isActive = true;
   }
@@ -45,4 +46,8 @@ public class EditorRoom {
 
   @OneToMany(mappedBy="room", cascade = CascadeType.ALL)
   private List<UserRoom> userRooms = new ArrayList<>();
+
+  @ManyToOne
+  @JoinColumn(name = "creator_username", referencedColumnName = "username")
+  private AppUser creator;
 }

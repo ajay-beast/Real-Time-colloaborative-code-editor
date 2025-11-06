@@ -2,10 +2,12 @@ package com.example.backend_service.services;
 
 
 import com.example.backend_service.dto.CreateRoomRequest;
+import com.example.backend_service.entity.AppUser;
 import com.example.backend_service.entity.EditorRoom;
 import com.example.backend_service.entity.UserRoom;
 import com.example.backend_service.exception.ResourceNotFoundException;
 import com.example.backend_service.repository.EditorRoomRepository;
+import com.example.backend_service.repository.UserRepository;
 import com.example.backend_service.repository.UserRoomRepository;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,9 @@ public class RoomService {
   @Autowired
   private UserRoomRepository userRoomRepository;
 
+  @Autowired
+  private UserRepository userRepository;
+
   public EditorRoom createRoom(CreateRoomRequest request) {
     String roomId = UUID.randomUUID().toString();
 
@@ -29,11 +34,13 @@ public class RoomService {
       roomId = UUID.randomUUID().toString();
     }
 
-    EditorRoom room = new EditorRoom(roomId, request.getRoomName(), request.getCreatorId());
+    AppUser appUser = userRepository.findByUsername(request.getCreatorId())
+        .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + request.getCreatorId()));
+    EditorRoom room = new EditorRoom(roomId, request.getRoomName(), appUser);
     room =  roomRepository.save(room);
     // create and save userRoom
     UserRoom userRoom = new UserRoom();
-    userRoom.setUserId(request.getCreatorId());
+    userRoom.setUser(appUser);
     userRoom.setRoom(room);
     userRoom.setCreatedByUser(true);
     userRoomRepository.save(userRoom);

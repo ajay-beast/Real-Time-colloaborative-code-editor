@@ -1,0 +1,60 @@
+<div class="auth-container">
+  <form (ngSubmit)="submit(f)" #f="ngForm" class="auth-form">
+    <h2>Create your account</h2>
+
+    <label>
+      Username
+      <input
+        type="text"
+        name="username"
+        [(ngModel)]="model.username"
+        required
+        minlength="3"
+        autocomplete="username"
+        placeholder="e.g. ajay123" />
+    </label>
+
+    <label>
+      Display name (optional)
+      <input
+        type="text"
+        name="displayName"
+        [(ngModel)]="model.displayName"
+        placeholder="e.g. Ajay" />
+    </label>
+
+    <label>
+      Password
+      <input
+        type="password"
+        name="password"
+        [(ngModel)]="model.password"
+        required
+        minlength="6"
+        autocomplete="new-password"
+        placeholder="••••••••" />
+    </label>
+
+    <label>
+      Confirm password
+      <input
+        type="password"
+        name="confirmPassword"
+        [(ngModel)]="model.confirmPassword"
+        required
+        minlength="6"
+        autocomplete="new-password"
+        placeholder="••••••••" />
+    </label>
+
+    <div class="error" *ngIf="passwordMismatch">Passwords do not match.</div>
+    <div class="error" *ngIf="error">{{ error }}</div>
+
+    <button type="submit" [disabled]="loading || !f.valid">Create account</button>
+
+    <div class="meta">
+      Already have an account?
+      <a routerLink="/signin">Sign in</a>
+    </div>
+  </form>
+</div>

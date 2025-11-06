@@ -1,0 +1,60 @@
+<div class="page">
+  <div class="bg-grad"></div>
+
+  <div class="card">
+    <div class="brand">
+      <div class="logo">⌘</div>
+      <div class="title">
+        <h1>CollabCode</h1>
+        <p>Sign in to your workspace</p>
+      </div>
+    </div>
+
+    <form (ngSubmit)="submit(f)" #f="ngForm" class="form">
+      <div class="field">
+        <label>Username</label>
+        <div class="input">
+          <span class="icon">👤</span>
+          <input
+            name="username"
+            [(ngModel)]="model.username"
+            required
+            minlength="3"
+            autocomplete="username"
+            placeholder="your.username" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <div class="input">
+          <span class="icon">🔒</span>
+          <input
+            name="password"
+            [(ngModel)]="model.password"
+            required
+            minlength="6"
+            type="password"
+            autocomplete="current-password"
+            placeholder="••••••••" />
+        </div>
+      </div>
+
+      <div class="error" *ngIf="error">{{ error }}</div>
+
+      <button type="submit" class="btn" [disabled]="loading || !f.valid">
+        <span class="spinner" *ngIf="loading"></span>
+        <span *ngIf="!loading">Sign In</span>
+      </button>
+
+      <div class="foot">
+        <span>New here?</span>
+        <a (click)="goSignup()">Create an account</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="footer-note">
+    Powered by Monaco + OT + Spring Boot
+  </div>
+</div>

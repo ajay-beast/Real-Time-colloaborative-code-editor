@@ -8,6 +8,11 @@
         Share Room
       </button>
       <span class="flex-spacer"></span>
+        <!-- User section -->
+  <div class="user-box">
+    <span class="hi-user">Hi, {{ username }}</span>
+    <button class="btn-logout" (click)="logout()">Logout</button>
+  </div>
       <button (click)="toggleRoomList()">Rooms ▼</button>
   
       <div *ngIf="showRoomList" class="room-list-dropdown">
